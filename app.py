@@ -1,11 +1,14 @@
+import os
+import psycopg2
 from flask import Flask, render_template
 from flask_cors import CORS
 from database import db
 from routes import setup_routes
+import os
 
 app = Flask(__name__)
 CORS(app)  # Для разрешения CORS
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///knowledge_assistant.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
