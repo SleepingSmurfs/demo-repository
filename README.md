@@ -3,6 +3,8 @@
 ![Proof HTML](https://github.com/SleepingSmurfs/demo-repository/actions/workflows/proof-html.yml/badge.svg)
 
 # Welcome to your organization's demo respository
-This code repository (or "repo") is designed to demonstrate the best GitHub has to offer with the least amount of noise.
+Решение команды SleepingSmurfs по треку Окно знаний 
 
-The repo includes an `index.html` file (so it can render a web page), two GitHub Actions workflows, and a CSS stylesheet dependency.
+Мы даем возможность пользователю создавать свои окна с разными моделями и кастомизировать их
+
+

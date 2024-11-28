@@ -12,3 +12,5 @@ pymongo[bson]
 Werkzeug
 # postgresql
 psycopg2-binary
+torch
+sentence-transformer
