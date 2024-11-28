@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Диалог с ботом</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body style="background-color: {{ settings['background_color'] }};">
+    <div class="chat-container" style="background-color: {{ settings['chat_background_color'] }};">
+        <div id="preview-chat" class="chat-box" style="font-family: {{ settings['font_family'] }}; font-size: {{ settings['font_size'] }}; overflow-y: auto; max-height: 400px;">
+            <div class="bot-message" style="color: {{ settings['bot_message_color'] }};">
+                <img id="preview-bot-icon" src="{{ url_for('static', filename='images/' + settings['bot_icon']) }}" alt="Bot Icon" class="bot-icon">
+                <p id="preview-welcome">{{ settings['welcome_message'] }}</p>
+            </div>
+        </div>
+        <div class="input-box">
+            <input type="text" id="user_input" placeholder="Напишите ваше сообщение..." style="font-family: {{ settings['font_family'] }}; font-size: {{ settings['font_size'] }};">
+            <button id="send_button" style="background-color: {{ settings['button_color'] }};">Отправить</button>
+        </div>
+    </div>
+    <a href="{{ url_for('inside_login') }}"><button>Войти</button></a>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+
+            async function sendMessage() {
+                const userInputElement = document.getElementById("user_input");
+                const userInput = userInputElement.value.trim();
+                if (userInput === "") return;
+
+                const chatBox = document.getElementById("preview-chat");
+
+                // Создание сообщения пользователя в интерфейсе
+                const userMessage = document.createElement("div");
+                userMessage.classList.add("user-message");
+                userMessage.style.color = "{{ settings['user_message_color'] }}";
+
+                const userIcon = document.createElement("img");
+                userIcon.classList.add("user-icon");
+                userIcon.src = "{{ url_for('static', filename='images/' + settings['user_icon']) }}";
+
+                const userText = document.createElement("p");
+                userText.textContent = userInput;
+
+                userMessage.appendChild(userIcon);
+                userMessage.appendChild(userText);
+                chatBox.appendChild(userMessage);
+
+                chatBox.scrollTop = chatBox.scrollHeight;
+                userInputElement.value = "";
+
+                // Отправка сообщения на сервер
+                try {
+                    const response = await fetch('/send_message', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ 
+                            message: userInput,
+                            model: "bot1"  // Передача модели
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (response.ok) {
+                        // Добавляем ответ бота
+                        const botMessage = document.createElement("div");
+                        botMessage.classList.add("bot-message");
+                        botMessage.style.color = "{{ settings['bot_message_color'] }}";
+
+                        const botIcon = document.createElement("img");
+                        botIcon.classList.add("bot-icon");
+                        botIcon.src = "{{ url_for('static', filename='images/' + settings['bot_icon']) }}";
+
+                        const botText = document.createElement("p");
+                        botText.textContent = data.response;
+
+                        botMessage.appendChild(botIcon);
+                        botMessage.appendChild(botText);
+                        chatBox.appendChild(botMessage);
+
+                        chatBox.scrollTop = chatBox.scrollHeight;
+                    } else {
+                        console.error("Ошибка:", data.error);
+                    }
+                } catch (error) {
+                    console.error("Ошибка соединения:", error);
+                }
+            }
+
+            document.getElementById("send_button").addEventListener("click", sendMessage);
+            document.getElementById("user_input").addEventListener("keydown", function(event) {
+                if (event.key === "Enter") {
+                    sendMessage();
+                }
+            });
+        document.getElementById("login_button").addEventListener("click", async function() {
+                try {
+                    const response = await fetch('/inside_login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ action: "login" })
+                    });
+
+                    const result = await response.json();
+                    if (response.ok) {
+                        alert(result.message);
+                    } else {
+                        console.error("Ошибка:", result.error);
+                    }
+                } catch (error) {
+                    console.error("Ошибка соединения:", error);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

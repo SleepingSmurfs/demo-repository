@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Загрузка файла</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <style>
+        :root {
+            --background-color: #1b1b1b;
+            --card-bg: #292929;
+            --highlighted-bg: #3d3d3d;
+            --primary-color: #e94560;
+            --secondary-color: #a1a1a1;
+            --text-color: #ffffff;
+            --highlight-color: #ffcc00;
+            --border-radius: 20px;
+            --shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            flex-direction: row;  /* Добавляем горизонтальное размещение */
+        }
+
+        .sidebar {
+            width: 250px;
+            padding: 20px;
+            background-color: var(--card-bg);
+            box-shadow: var(--shadow);
+            border-radius: var(--border-radius);
+            margin-right: 20px;
+            text-align: left;
+        }
+
+        .sidebar h2 {
+            font-size: 1.5rem;
+            color: var(--highlight-color);
+            margin-bottom: 20px;
+        }
+
+        .sidebar select {
+            padding: 10px;
+            border-radius: var(--border-radius);
+            border: 1px solid #ccc;
+            width: 100%;
+            background-color: var(--highlighted-bg);
+            color: var(--text-color);
+        }
+
+        .upload-container {
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: var(--highlight-color);
+        }
+
+        label {
+            font-size: 1.2rem;
+            margin-top: 20px;
+            color: var(--secondary-color);
+        }
+
+        select, input[type="file"] {
+            padding: 10px;
+            border-radius: var(--border-radius);
+            border: 1px solid #ccc;
+            margin-top: 10px;
+            width: 100%;
+            max-width: 300px;
+            background-color: var(--highlighted-bg);
+            color: var(--text-color);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            border: none;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin-top: 20px;
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: var(--highlight-color);
+        }
+
+        form {
+            margin-bottom: 30px;
+        }
+
+        .file-upload-section {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .file-upload-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-upload-info {
+            background-color: var(--highlighted-bg);
+            color: var(--text-color);
+            padding: 10px;
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+            max-width: 350px;
+            text-align: left;
+        }
+
+        a {
+            display: block;
+            margin-top: 30px;
+            text-decoration: none;
+        }
+
+        .upload-button {
+            background-color: var(--primary-color);
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            color: var(--text-color);
+            font-size: 1rem;
+            text-transform: uppercase;
+            margin: 10px;
+            display: inline-block;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .upload-button:hover {
+            background-color: var(--highlight-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- Боковая панель -->
+    <div class="sidebar">
+        <h2>Выберите модель</h2>
+        <select id="model_select" name="model" required>
+            <option value="model1">Модель 1</option>
+            <option value="model2">Модель 2</option>
+            <option value="model3">Модель 3</option>
+            <option value="model4">Модель 4</option>
+            <option value="model5">Модель 5</option>
+            <option value="model6">Модель 6</option>
+            <option value="model7">Модель 7</option>
+        </select>
+    </div>
+
+    <!-- Контейнер для загрузки файлов -->
+    <div class="upload-container">
+        <h1>Загрузить файл</h1>
+
+        <!-- Разделы для загрузки разных типов файлов -->
+        <div class="file-upload-section">
+            <!-- Загрузка .txt файла -->
+            <div class="file-upload-item">
+                <form id="file-upload-txt-form" enctype="multipart/form-data">
+                    <h3>Загрузить .txt файл</h3>
+                    <input type="file" name="file_input" accept=".txt" required>
+                    <button class="upload-button" type="submit">Загрузить .txt</button>
+                </form>
+            </div>
+
+            <!-- Загрузка .pdf файла -->
+            <div class="file-upload-item">
+                <form id="file-upload-pdf-form" enctype="multipart/form-data">
+                    <h3>Загрузить .pdf файл</h3>
+                    <input type="file" name="file_input" accept=".pdf" required>
+                    <button class="upload-button" type="submit">Загрузить .pdf</button>
+                </form>
+
+            </div>
+
+            <!-- Загрузка .md файла -->
+            <div class="file-upload-item">
+                <form id="file-upload-md-form" enctype="multipart/form-data">
+                    <h3>Загрузить .md файл</h3>
+                    <input type="file" name="file_input" accept=".md" required>
+                    <button class="upload-button" type="submit">Загрузить .md</button>
+                </form>
+                
+            </div>
+
+            <!-- Загрузка .docx файла -->
+            <div class="file-upload-item">
+                <form id="file-upload-docx-form" enctype="multipart/form-data">
+                    <h3>Загрузить .docx файл</h3>
+                    <input type="file" name="file_input" accept=".docx" required>
+                    <button class="upload-button" type="submit">Загрузить .docx</button>
+                </form>
+
+            </div>
+
+            <!-- Загрузка .json файла -->
+            <div class="file-upload-item">
+                <form id="file-upload-json-form" enctype="multipart/form-data">
+                    <h3>Загрузить .json файл</h3>
+                    <input type="file" name="file_input" accept=".json" required>
+                    <button class="upload-button" type="submit">Загрузить .json</button>
+                </form>
+
+            </div>
+
+            <!-- Загрузка .csv файла -->
+            <div class="file-upload-item">
+                <form id="file-upload-csv-form" enctype="multipart/form-data">
+                    <h3>Загрузить .csv файл</h3>
+                    <input type="file" name="file_input" accept=".csv" required>
+                    <button class="upload-button" type="submit">Загрузить .csv</button>
+                </form>
+
+            </div>
+
+            <!-- Загрузка .index файла -->
+            <div class="file-upload-item">
+                <form id="file-upload-index-form" enctype="multipart/form-data">
+                    <h3>Загрузить .index файл</h3>
+                    <input type="file" name="file_input" accept=".index" required>
+                    <button class="upload-button" type="submit">Загрузить .index</button>
+                </form>
+                
+            </div>
+
+            <div class="file-upload-item">
+                <form id="file-upload-sql-gz-form" enctype="multipart/form-data">
+                    <h3>Загрузить .sql.gz файл</h3>
+                    <input type="file" name="file_input" accept=".sql.gz" required>
+                    <button class="upload-button" type="submit">Загрузить .sql.gz</button>
+                </form>
+                
+            </div>
+
+            <div class="file-upload-item">
+                <form id="file-upload-dump-form" enctype="multipart/form-data">
+                    <h3>Загрузить .dump файл</h3>
+                    <input type="file" name="file_input" accept=".dump" required>
+                    <button class="upload-button" type="submit">Загрузить .dump</button>
+                </form>
+                
+            </div>
+
+            <div class="file-upload-item">
+                <form id="file-upload-tar-form" enctype="multipart/form-data">
+                    <h3>Загрузить .tar файл</h3>
+                    <input type="file" name="file_input" accept=".tar" required>
+                    <button class="upload-button" type="submit">Загрузить .tar</button>
+                </form>
+                
+            </div>
+
+            <div class="file-upload-item">
+                <form id="file-upload-dmp-form" enctype="multipart/form-data">
+                    <h3>Загрузить .dmp файл</h3>
+                    <input type="file" name="file_input" accept=".dmp" required>
+                    <button class="upload-button" type="submit">Загрузить .dmp</button>
+                </form>
+                
+            </div>
+
+            <div class="file-upload-item">
+                <form id="file-upload-db-form" enctype="multipart/form-data">
+                    <h3>Загрузить .db файл</h3>
+                    <input type="file" name="file_input" accept=".db" required>
+                    <button class="upload-button" type="submit">Загрузить .db</button>
+                </form>
+                
+            </div>
+
+            <div class="file-upload-item">
+                <form id="file-upload-sqlite-form" enctype="multipart/form-data">
+                    <h3>Загрузить .sqlite файл</h3>
+                    <input type="file" name="file_input" accept=".sqlite" required>
+                    <button class="upload-button" type="submit">Загрузить .sqlite</button>
+                </form>
+                
+            </div>
+            <div class="file-upload-item">
+                <form id="file-upload-sqlite3-form" enctype="multipart/form-data">
+                    <h3>Загрузить .sqlite3 файл</h3>
+                    <input type="file" name="file_input" accept=".sqlite3" required>
+                    <button class="upload-button" type="submit">Загрузить .sqlite3</button>
+                </form>
+                
+            </div>
+            <div class="file-upload-item">
+                <form id="file-upload-bson-form" enctype="multipart/form-data">
+                    <h3>Загрузить .bson файл</h3>
+                    <input type="file" name="file_input" accept=".bson" required>
+                    <button class="upload-button" type="submit">Загрузить .bson</button>
+                </form>
+                
+            </div>
+
+
+        </div>
+
+        <!-- Кнопка для возврата на основную страницу -->
+        <a href="{{ url_for('index') }}">
+            <button class="upload-button">Вернуться на основную страницу</button>
+        </a>
+    </div>
+
+    <script>
+        function handleFileUpload(event, formId) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const model = document.getElementById('model_select').value;
+            console.log(model)
+            formData.append('model', model);
+
+            fetch('/upload_file', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())  // Используем .text() для получения сырого ответа
+            .then(data => {
+                try {
+                    const jsonResponse = JSON.parse(data); // Пробуем распарсить ответ как JSON
+                    if (jsonResponse.success) {
+                        alert('Файл успешно загружен!');
+                    } else {
+                        alert('Ошибка при загрузке файла: ' + jsonResponse.message);
+                    }
+                } catch (e) {
+                    console.error('Ошибка при обработке ответа:', e);
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка при отправке запроса:', error);
+                alert('Ошибка: ' + error);
+            });
+        }
+
+        document.getElementById('file-upload-txt-form').addEventListener('submit', function(event) {
+            handleFileUpload(event, 'file-upload-txt-form');
+        });
+        document.getElementById('file-upload-pdf-form').addEventListener('submit', function(event) {
+            handleFileUpload(event, 'file-upload-pdf-form');
+        });
+        document.getElementById('file-upload-md-form').addEventListener('submit', function(event) {
+            handleFileUpload(event, 'file-upload-md-form');
+        });
+        document.getElementById('file-upload-docx-form').addEventListener('submit', function(event) {
+            handleFileUpload(event, 'file-upload-docx-form');
+        });
+        document.getElementById('file-upload-json-form').addEventListener('submit', function(event) {
+            handleFileUpload(event, 'file-upload-json-form');
+        });
+        document.getElementById('file-upload-csv-form').addEventListener('submit', function(event) {
+            handleFileUpload(event, 'file-upload-csv-form');
+        });
+        document.getElementById('file-upload-index-form').addEventListener('submit', function(event) {
+            handleFileUpload(event, 'file-upload-index-form');
+        });
+        document.getElementById('file-upload-sql-form').addEventListener('submit', function(event) {
+            handleFileUpload(event, 'file-upload-sql-form');
+        });
+        document.getElementById('file-upload-gz-form').addEventListener('submit', function(event) {
+            handleFileUpload(event, 'file-upload-gz-form');
+        });
+        document.getElementById('file-upload-sql-gz-form').addEventListener('submit', function(event) {
+            handleFileUpload(event, 'file-upload-sql-gz-form');
+        });
+        document.getElementById('file-upload-dump-form').addEventListener('submit', function(event) {
+            handleFileUpload(event, 'file-upload-dump-form');
+        });
+        document.getElementById('file-upload-tar-form').addEventListener('submit', function(event) {
+            handleFileUpload(event, 'file-upload-tar-form');
+        });
+        document.getElementById('file-upload-db-form').addEventListener('submit', function(event) {
+            handleFileUpload(event, 'file-upload-db-form');
+        });
+        document.getElementById('file-upload-sqlite-form').addEventListener('submit', function(event) {
+            handleFileUpload(event, 'file-upload-sqlite-form');
+        });
+        document.getElementById('file-upload-sqlite3-form').addEventListener('submit', function(event) {
+            handleFileUpload(event, 'file-upload-sqlite3-form');
+        });
+        document.getElementById('file-upload-bson-form').addEventListener('submit', function(event) {
+            handleFileUpload(event, 'file-upload-bson-form');
+        });
+        document.getElementById('file-upload-dmp-form').addEventListener('submit', function(event) {
+            handleFileUpload(event, 'file-upload-dmp-form');
+        });
+    </script>
+</body>
+</html>
