@@ -1,16 +1,16 @@
 from flask import Flask, request, render_template, jsonify
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
-import faker
-import faker_commerce
 import json
 import boto3
 import uuid
 import os
+import shutil
 import glob
 from botocore.exceptions import NoCredentialsError
 from botocore.client import Config
 from pypdf import PdfReader
 from urllib.request import urlopen
+import ssl
 from bs4 import BeautifulSoup
 import os
 from docx import Document
@@ -22,72 +22,47 @@ import gzip
 import random
 import string
 import pdfplumber
-from supabase import create_client, Client
-from pydantic import BaseModel
+import sqlite3
+import bson
+import re
+from werkzeug.utils import secure_filename
+import re
+from werkzeug.datastructures import ImmutableMultiDict
+from werkzeug.security import generate_password_hash, check_password_hash
+import psycopg2
+from psycopg2 import sql
+import logging
+from celery import Celery, chain
+from celery.schedules import crontab
+from queue import Queue
+from pipeline import embedding_pipeline, input_query
+
+
+
 
 app = Flask(__name__)
 app.secret_key = 'mine' 
+logging.basicConfig(level=logging.INFO)
+db_config = {
+    "dbname": "web",  # Замените на имя вашей базы данных
+    "user": "postgres",  # Замените на имя пользователя
+    "password": "toor",  # Замените на пароль пользователя
+    "host": "127.0.0.1",  # Если база данных на локальной машине
+    "port": "5432"  # Обычно стандартный порт PostgreSQL
+}
+def start():
+    conn = psycopg2.connect(
+        dbname="web",
+        user="postgres", 
+        password="toor",  
+        host="127.0.0.1",  
+        port="5432" 
+    )
+    return conn
+def get_db_connection():
+    conn = start()
+    return conn
 
-# def create_supabase_client() -> Client:
-#     supabase_url = os.getenv('https://lplyqcgkevdmibkeyebz.supabase.co')
-#     supabase_anon_key = os.getenv('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwbHlxY2drZXZkbWlia2V5ZWJ6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczMjY5ODEwMSwiZXhwIjoyMDQ4Mjc0MTAxfQ.XTtQbzqPDCKp3whOnh43QZ1ZEtwsuC1yChZW1OQiW20Y')
-#     return create_client(supabase_url, supabase_anon_key)
-
-# # class Item(BaseModel):
-# #     id: str
-# #     name: str
-# #     description: str
-
-# # @app.post("/items/")
-# # async def create_item(item: Item):
-# #     supabase = create_supabase_client()
-    
-# #     # Добавляем данные в таблицу "items"
-# #     response = supabase.table('items').insert(item.dict()).execute()
-
-# #     if response.status_code != 201:
-# #         raise HTTPException(status_code=response.status_code, detail=response.data)
-
-# #     return response.data
-def add_entries_to_vendor_table(supabase, vendor_count):
-    fake = Faker()
-    foreign_key_list = []
-    fake.add_provider(faker_commerce.Provider)
-    main_list = []
-    for i in range(vendor_count):
-        value = {'vendor_name': fake.company(), 'total_employees': fake.random_int(40, 169),
-                 'vendor_location': fake.country()}
-
-        main_list.append(value)
-    data = supabase.table('Vendor').insert(main_list).execute()
-    data_json = json.loads(data.json())
-    data_entries = data_json['data']
-    for i in range(len(data_entries)):
-        foreign_key_list.append(int(data_entries[i]['vendor_id']))
-    return foreign_key_list
-
-
-def add_entries_to_product_table(supabase, vendor_id):
-    fake = Faker()
-    fake.add_provider(faker_commerce.Provider)
-    main_list = []
-    iterator = fake.random_int(1, 15)
-    for i in range(iterator):
-        value = {'vendor_id': vendor_id, 'product_name': fake.ecommerce_name(),
-                 'inventory_count': fake.random_int(1, 100), 'price': fake.random_int(45, 100)}
-        main_list.append(value)
-    data = supabase.table('Product').insert(main_list).execute()
-
-
-def main():
-    vendor_count = 10
-    load_dotenv()
-    url: str = os.environ.get("https://lplyqcgkevdmibkeyebz.supabase.co")
-    key: str = os.environ.get("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwbHlxY2drZXZkbWlia2V5ZWJ6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczMjY5ODEwMSwiZXhwIjoyMDQ4Mjc0MTAxfQ.XTtQbzqPDCKp3whOnh43QZ1ZEtwsuC1yChZW1OQiW20")
-    supabase: Client = create_client(url, key)
-    fk_list = add_entries_to_vendor_table(supabase, vendor_count)
-    for i in range(len(fk_list)):
-        add_entries_to_product_table(supabase, fk_list[i])
 
 current_file_path = os.path.abspath(__file__)
 current_dir = os.path.dirname(current_file_path)
@@ -98,6 +73,122 @@ users = {
     "admin": "password123",
     "user": "userpass"
 }
+
+
+# Данные для пользователей
+new_db_name1 = "user_credentials"
+new_db_name2 = "user_credentials2"
+
+usernames1 = [f'user{i}' for i in range(1, 13)]
+usernames2 = [f'user{i}' for i in range(1, 5)]
+password = generate_password_hash("1")
+
+# Функция для создания базы данных и пользователей
+def create_database_and_users(db_name, usernames):
+    connection = None
+    cursor = None
+    try:
+        # Подключаемся к базовой базе данных postgres
+        connection = psycopg2.connect(**db_config)
+        connection.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)  # Включаем autocommit
+        cursor = connection.cursor()
+
+        # Создаем новую базу данных
+        cursor.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(db_name)))
+        print(f"База данных '{db_name}' успешно создана!")
+
+        # Закрываем соединение с базой данных, чтобы подключиться к новой
+        cursor.close()
+        connection.close()
+
+        # Обновляем настройки для подключения к новой базе данных
+        db_config["dbname"] = db_name
+
+        # Подключаемся к только что созданной базе данных
+        connection = psycopg2.connect(**db_config)
+        cursor = connection.cursor()
+
+        # Создаем пользователей и задаем им пароли
+        for username in usernames:
+            cursor.execute(sql.SQL("CREATE USER {} WITH PASSWORD %s").format(sql.Identifier(username)), [password])
+            print(f"Пользователь '{username}' успешно создан!")
+
+        # Сохраняем изменения
+        connection.commit()
+        print("Все пользователи успешно созданы!")
+
+    except Exception as e:
+        print(f"Произошла ошибка: {e}")
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
+# Создаем базу данных и пользователей для первого набора пользователей
+create_database_and_users(new_db_name1, usernames1)
+
+# Создаем базу данных и пользователей для второго набора пользователей
+create_database_and_users(new_db_name2, usernames2)
+
+# Функции для проверки логина
+def login_check(username, password):
+    conn = None
+    try:
+        # Подключаемся к базе данных
+        conn = psycopg2.connect(**db_config)
+        cursor = conn.cursor()
+        
+        # Выполняем запрос для получения пароля по имени пользователя
+        cursor.execute("""
+            SELECT password FROM user_credentials WHERE username = %s
+        """, (username,))
+        
+        # Получаем результат запроса
+        user = cursor.fetchone()
+        
+        if user is not None:
+            stored_password_hash = user[0]
+            # Проверяем введенный пароль с хешем
+            if check_password_hash(stored_password_hash, password):
+                return True
+        return False
+    except Exception as e:
+        print(f"Ошибка: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+def login_check2(username, password):
+    conn = None
+    try:
+        # Подключаемся ко второй базе данных
+        db_config["dbname"] = new_db_name2  # Обновляем конфиг для второй базы
+        conn = psycopg2.connect(**db_config)
+        cursor = conn.cursor()
+        
+        # Выполняем запрос для получения пароля по имени пользователя
+        cursor.execute("""
+            SELECT password FROM user_credentials2 WHERE username = %s
+        """, (username,))
+        
+        user = cursor.fetchone()
+        
+        if user is not None:
+            stored_password_hash = user[0]
+            if check_password_hash(stored_password_hash, password):
+                return True
+        return False
+    except Exception as e:
+        print(f"Ошибка: {e}")
+        return False
+    finally:
+        if conn:
+            conn.close()
+
+
+
 
 #это не трогаем
 def get_lis_of_models():
@@ -238,7 +329,14 @@ def upload_file():
 
     return jsonify({"success": False, "error": "Ошибка при загрузке файла"}), 500
 
-
+@app.route('/submit_url', methods=['POST'])
+def submit_url():
+    print()
+    url = request.form.get('url')
+    print(url)
+    model = request.form.get('model')
+    parc_url(model, url)
+    return jsonify({"success": True, "message": f"ссылка  успешно загружена!"})
 
 #создание модели
 @app.route('/create_model', methods=['POST'])
@@ -286,16 +384,15 @@ def create_model():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        #получаем данные из реквеста
-        username = request.form['username']
+        username_any = request.form['username']
+        username = username_any.lower()
         password = request.form['password']
-        
-        #если совпало
-        if username in users and users[username] == password:
-            session['username'] = username  # Сохраняем пользователя в сессии
-            return redirect(url_for('index'))  # Перенаправление на страницу настроек
+        if login_check(username, password) == True:
+            session['username'] = username
+            return redirect(url_for('main_screen'))
         else:
-            flash("Неверное имя пользователя или пароль")  # Сообщение об ошибке
+            flash('Invalid username or password')
+            return redirect(url_for('index'))
     
     return render_template('login.html')  # Рендерим форму логина
 
@@ -323,7 +420,6 @@ def inside_chat_bot():
 
 @app.route('/send_message', methods=['POST'])
 def send_message():
-    print("jwrhfkjdhg")
     data = request.get_json()
     user_message = data.get("message")
     model = data.get("model")
@@ -331,8 +427,10 @@ def send_message():
     if not user_message:
         return jsonify({"error": "Сообщение не может быть пустым"}), 400
 
+
+    answer = func_ml_answer(user_message)
     # Логика ответа бота
-    bot_response = f"Ваше сообщение: '{user_message}' получено!"
+    bot_response = answer
 
     # Здесь можно добавить сложную логику или подключение модели для ответа
 
@@ -348,6 +446,24 @@ def pars_file(filename, model, file_ext):
     txt_file = f"{current_dir}/ml/{model}/{filename}.txt"
     input_file = f'{current_dir}/uploads/{model}/{filename}'
 
+    if file_ext == ".txt":
+        # Пример использования
+        src_path = input_file  # Укажите путь к исходному файлу
+        dest_path = txt_file  # Укажите путь для копии
+        try:
+            # Проверка существования исходного файла
+            if not os.path.isfile(src_path):
+                print(f"Файл {src_path} не найден.")
+                return
+            
+            # Копирование файла
+            shutil.copy(src_path, dest_path)
+            print(f"Файл успешно скопирован из {src_path} в {dest_path}")
+            ml_func(txt_file)
+        
+        except Exception as e:
+            print(f"Ошибка при копировании файла: {e}")
+
     if file_ext == ".pdf":
         print("parsing start1")
         print(input_file )
@@ -359,6 +475,7 @@ def pars_file(filename, model, file_ext):
                     if text:
                         print(text)
                         text_file.write(text + "\n")
+                    ml_func(txt_file)
 
     elif file_ext == ".docx":
         print("parsing start2")
@@ -370,6 +487,7 @@ def pars_file(filename, model, file_ext):
 
         with open(txt_file, 'w', encoding='utf-8') as f:
             f.write(text)
+        ml_func(txt_file)
         
     elif file_ext == ".csv":
         csv_file = input_file
@@ -378,6 +496,7 @@ def pars_file(filename, model, file_ext):
             with open(csv_file, "r") as my_input_file:
                 [ my_output_file.write(" ".join(row)+'\n') for row in csv.reader(my_input_file)]
         my_output_file.close()
+        ml_func(txt_file)
 
     elif file_ext == ".json":
         json_file = input_file
@@ -396,12 +515,14 @@ def pars_file(filename, model, file_ext):
                     f.write("\n")
             else:
                 f.write(str(data))
+            ml_func(txt_file)
 
     elif file_ext == ".sql":
         sql_file = input_file
         with open(sql_file, 'r', encoding='utf-8') as f:
             with open(txt_file, 'w', encoding='utf-8') as output:
                 output.write(f.read())
+                ml_func(txt_file)
 
     elif file_ext == ".gz":
         gz_file = input_file
@@ -409,6 +530,7 @@ def pars_file(filename, model, file_ext):
         with gzip.open(gz_file, 'rt', encoding='utf-8') as f:
             with open(txt_file, 'w', encoding='utf-8') as output:
                 output.write(f.read())
+                ml_func(txt_file)
 
     elif file_ext == ".tar":
         tar_file = input_file
@@ -425,6 +547,7 @@ def pars_file(filename, model, file_ext):
                         f.write("\n\n")
                         
                 input.close()
+                ml_func(txt_file)
 
     elif file_ext == ".zip":
         zip_file = input_file
@@ -438,15 +561,89 @@ def pars_file(filename, model, file_ext):
                         f.write("\n\n")
                 input.close()
 
+    elif file_ext == ".index":
+        try:
+            # Открываем бинарный файл .index для чтения
+            with open(input_file, 'rb') as index_file:
+                data = index_file.read()  # Чтение всех данных файла
+
+            # Записываем данные в текстовый файл
+            with open(txt_file, 'w', encoding='utf-8') as txt_file:
+                txt_file.write(str(data))  # Преобразуем байты в строку для записи
+
+            print(f"Данные из {input_file} успешно записаны в {txt_file}")
+            ml_func(txt_file)
+        
+        except Exception as e:
+            print(f"Ошибка при записи файла: {e}")
+
+    elif file_ext == ".dump":
+        try:
+            # Открываем исходный SQL dump файл для чтения
+            with open(input_file, 'r', encoding='utf-8') as file:
+                # Открываем текстовый файл для записи
+                with open(txt_file, 'w', encoding='utf-8') as txt_file:
+                    for line in file:
+                        # Записываем каждую строку в новый текстовый файл
+                        txt_file.write(line)
+                        # Также выводим в консоль (по желанию)
+                        print(line.strip())
+            print(f"Данные из {input_file} успешно записаны в {txt_file}")
+            ml_func(txt_file)
+        except Exception as e:
+            print(f"Ошибка при парсинге SQL dump файла: {e}")
+
+    elif file_ext == ".bson":
+        try:
+            # Открываем файл BSON для чтения в бинарном режиме
+            with open(input_file, 'rb') as file:
+                data = bson.decode_all(file.read())  # Декодируем все документы из BSON
+
+                # Открываем текстовый файл для записи
+                with open(txt_file, 'w', encoding='utf-8') as txt_file:
+                    for document in data:
+                        # Записываем каждый документ в текстовый файл
+                        txt_file.write(str(document) + "\n")  # Преобразуем документ в строку и добавляем новую строку
+                        print(document)  # Выводим документ в консоль (по желанию)
+            
+            print(f"Данные из {input_file} успешно записаны в {txt_file}")
+            ml_func(txt_file)
+        
+        except Exception as e:
+            print(f"Ошибка при парсинге BSON файла: {e}")
+
+            import re
+
+    elif file_ext == ".md":
+        try:
+            # Открываем Markdown файл для чтения
+            with open(input_file, 'r', encoding='utf-8') as md_file:
+                # Открываем текстовый файл для записи
+                with open(txt_file, 'w', encoding='utf-8') as txt_file:
+                    for line in md_file:
+                        # Удаление Markdown-разметки, например, удаление заголовков и ссылок
+                        line = re.sub(r'#\s*(.*?)\s*', r'\1', line)  # Удаление заголовков
+                        line = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', line)  # Удаление ссылок
+                        txt_file.write(line)
+                        print(line.strip())  # Выводим строку в консоль (по желанию)
+            
+            print(f"Данные из {input_file} успешно записаны в {txt_file}")
+            ml_func(txt_file)
+        
+        except Exception as e:
+            print(f"Ошибка при парсинге Markdown файла: {e}")
+
+
 
 def parc_url(model, url):
     name = generate_random_name()
     
     
-    txt_file = f"/ml/{model}/{name}.txt"
+    txt_file = f"{current_dir}/ml/{model}/{name}.txt"
     with open(txt_file, "a", encoding="utf-8") as file:
 
-        html_code = str(urlopen(url).read(),'utf-8')
+        context = ssl._create_unverified_context()
+        html_code = str(urlopen(url, context=context).read(), 'utf-8')
         soup = BeautifulSoup(html_code, "html.parser")
 
         s = soup.find('title').text
@@ -454,12 +651,22 @@ def parc_url(model, url):
 
         for par in soup.find_all('p'):
             file.write(par.text + '\n')
+    ml_func(f"{current_dir}/ml/{model}/{name}.txt")
 
 
 
 def generate_random_name(length=6):
     return ''.join(random.choices(string.ascii_lowercase + string.ascii_uppercase, k=length))
 
+
+
+def ml_func(dir):
+    embedding_pipeline(dir)
+
+def func_ml_answer(user_message):
+    aw = input_query(user_message)
+    return aw
+    
 
 
 
