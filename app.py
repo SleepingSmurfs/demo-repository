@@ -35,7 +35,7 @@ import logging
 from celery import Celery, chain
 from celery.schedules import crontab
 from queue import Queue
-from pipeline import embedding_pipeline, input_query
+from pipeline import start_chating, start_loading
 
 
 
@@ -284,7 +284,6 @@ def bot():
 def upload_file():
     # Проверяем, был ли файл в запросе
     if 'file_input' not in request.files:
-        #если нас нае.. то выдаем ошибку
         return jsonify({"success": False, "error": "Нет файла в запросе"}), 400
 
     #полуение файл из реквеста
@@ -295,7 +294,6 @@ def upload_file():
 
     # Проверка, был ли файл выбран
     if file.filename == '':
-        #если нас нае.. то выдаем ошибку
         return jsonify({"success": False, "error": "Не выбран файл"}), 400
 
 
@@ -661,11 +659,11 @@ def generate_random_name(length=6):
 
 
 def ml_func(dir):
-    embedding_pipeline(dir)
+    start_loading(dir)
 
 def func_ml_answer(user_message):
-    aw = input_query(user_message)
-    return aw
+    response = start_chating(user_message)
+    return response
     
 
 

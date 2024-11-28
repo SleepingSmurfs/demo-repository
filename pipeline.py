@@ -72,35 +72,26 @@ dangerous_topic_embeddings = create_dangerous_topic_embeddings(
 )
 
 
-def input_query(mes):
+def start_loading(dir):
+    embedding_pipeline(dir)
 
-    return mes
+def start_chating(mes):            
+    pages_and_chunks, embeddings = import_embeddings()
 
+    query = mes
 
-if __name__ == "__main__":
-    action = int(input("Input action: "))
-
-    # Загрузка данных
-    if action == 1:
-        embedding_pipeline()
-    # Ответ на запрос
+    if is_dangerous_query_with_similarity(
+            query, embedding_model,
+            dangerous_topic_embeddings,
+            threshold=0.7
+    ):
+        print("Ваш запрос не может быть обработан, так как он нарушает "
+                "правила использования.")
     else:
-        pages_and_chunks, embeddings = import_embeddings()
-
-        query = input_query()
-
-        if is_dangerous_query_with_similarity(
-                query, embedding_model,
-                dangerous_topic_embeddings,
-                threshold=0.7
-        ):
-            print("Ваш запрос не может быть обработан, так как он нарушает "
-                  "правила использования.")
-        else:
-            print_top_results_and_scores(
-                query=query,
-                embeddings=embeddings,
-                pages_and_chunks=pages_and_chunks,
-                model=embedding_model,
-                n_resources_to_return=1
-            )
+        print_top_results_and_scores(
+            query=query,
+            embeddings=embeddings,
+            pages_and_chunks=pages_and_chunks,
+            model=embedding_model,
+            n_resources_to_return=1
+        )

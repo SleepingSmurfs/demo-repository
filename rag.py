@@ -2,10 +2,12 @@ import textwrap
 import torch
 import numpy as np
 import pandas as pd
+import os
 
 from sentence_transformers import util, SentenceTransformer
-
-PATH_TO_EMBEDDINGS = "embeddings/chunks_and_embeddings_df.csv"
+current_file_path = os.path.abspath(__file__)
+current_dir = os.path.dirname(current_file_path)
+PATH_TO_EMBEDDINGS = f"{current_dir}/embeddings/chunks_and_embeddings_df.csv"
 DEVICE = 'cpu'
 
 

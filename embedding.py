@@ -32,9 +32,10 @@ class EmbeddingModel:
                                              index=False)
 
         print("data saved")
-
+current_file_path = os.path.abspath(__file__)
+current_dir = os.path.dirname(current_file_path)
 
 def embedding_pipeline(dir):
     embedding = EmbeddingModel(dir)
     embedding.get_embedding()
-    embedding.save_embedding("embeddings/")
+    embedding.save_embedding(f"{current_dir}/embeddings/")
