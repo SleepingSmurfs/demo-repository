@@ -1,17 +1,84 @@
 from sentence_transformers import SentenceTransformer
 
 from embedding import embedding_pipeline
-from rag import import_embeddings
-from llm import choose_model_based_on_gpu, config_models, ask
+from rag import (import_embeddings, print_top_results_and_scores,
+                 create_dangerous_topic_embeddings,
+                 is_dangerous_query_with_similarity)
+
+# from llm import choose_model_based_on_gpu, config_models, ask
+
+dangerous_topics = [
+    # Оружие
+    "оружие", "пистолет", "автомат", "винтовка", "граната",
+    "бомба", "взрывчатка", "оружейный магазин", "боеприпасы",
+    "нож", "огнемёт", "оружие массового поражения",
+
+    # Насилие
+    "насилие", "убийство", "покушение", "атака", "терроризм",
+    "избиение", "угроза", "пытка", "теракт", "убийца", "нападение",
+
+    # Взрывы и подрывные действия
+    "взрыв", "подрыв", "мина", "детонатор", "самодельная взрывчатка",
+    "C4", "динамит", "порох", "подрывник", "взрывное устройство",
+
+    # Наркотики
+    "наркотики", "кокаин", "героин", "метамфетамин", "марихуана",
+    "спайс", "экстази", "опиум", "наркотрафик", "амфетамин",
+    "синтетические наркотики", "психотропные вещества",
+
+    # Преступность
+    "преступление", "кража", "грабёж", "взлом", "шпионаж",
+    "контрабанда", "похищение", "рэкет", "вымогательство",
+    "мошенничество", "подделка документов", "угон автомобиля",
+
+    # Опасные химикаты и вещества
+    "токсичные вещества", "цианид", "ртуть", "мышьяк", "яд",
+    "химическое оружие", "сера", "азотная кислота",
+    "серная кислота", "производство ядов",
+
+    # Киберпреступления
+    "хакер", "киберпреступление", "вирус", "взлом серверов",
+    "кража данных", "фишинг", "DDoS-атака", "шпионское ПО",
+    "вредоносный код", "троянский вирус",
+    "злоупотребление персональными данными",
+
+    # Экстремизм
+    "экстремизм", "радикализм", "анархизм", "подстрекательство",
+    "сепаратизм", "идеология ненависти", "пропаганда насилия",
+    "расизм", "террористическая группировка", "фашизм",
+    "подстрекательство к насилию",
+
+    # Шпионаж и военные действия
+    "шпион", "слежка", "военная техника", "перехват данных",
+    "вооружённое сопротивление", "подрыв государственной власти",
+    "саботаж", "военный переворот", "контрразведка",
+    "тайная операция", "государственная измена",
+
+    # Организованная преступность
+    "мафия", "наркокартель", "бандит", "банда", "рекетир",
+    "торговля людьми", "чёрный рынок", "торговля органами",
+    "контрабанда оружия", "прачечная для денег"
+]
+
+device = 'cpu'
+embedding_model = SentenceTransformer(
+    model_name_or_path="all-mpnet-base-v2",
+    device=device
+)
+
+dangerous_topic_embeddings = create_dangerous_topic_embeddings(
+    dangerous_topics,
+    embedding_model
+)
 
 
 def input_query():
-    query = "How are you?"
+    query = "Почему женщины убивают?"
     return query
 
 
 if __name__ == "__main__":
-    action = int(input())
+    action = int(input("Input action: "))
 
     # Загрузка данных
     if action == 1:
@@ -20,23 +87,20 @@ if __name__ == "__main__":
     else:
         pages_and_chunks, embeddings = import_embeddings()
 
-        device = 'cpu'
-        embedding_model = SentenceTransformer(
-            model_name_or_path="all-mpnet-base-v2",
-            device=device
-        )
-
-        use_quantization_config, model_id = choose_model_based_on_gpu()
-        tokenizer, llm_model = config_models(use_quantization_config, model_id)
-
         query = input_query()
 
-        output_text = ask(
-            query=query,
-            embeddings=embeddings,
-            pages_and_chunks=pages_and_chunks,
-            embedding_model=embedding_model,
-            tokenizer=tokenizer,
-            llm_model=llm_model,
-            return_answer_only=True
-        )
+        if is_dangerous_query_with_similarity(
+                query, embedding_model,
+                dangerous_topic_embeddings,
+                threshold=0.7
+        ):
+            print("Ваш запрос не может быть обработан, так как он нарушает "
+                  "правила использования.")
+        else:
+            print_top_results_and_scores(
+                query=query,
+                embeddings=embeddings,
+                pages_and_chunks=pages_and_chunks,
+                model=embedding_model,
+                n_resources_to_return=1
+            )

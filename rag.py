@@ -1,5 +1,4 @@
-import random
-
+import textwrap
 import torch
 import numpy as np
 import pandas as pd
@@ -43,3 +42,50 @@ def retrieve_relevant_resources(
                                  k=n_resources_to_return)
 
     return scores, indices
+
+
+def print_wrapped(text, wrap_length=80):
+    wrapped_text = textwrap.fill(text, wrap_length)
+    print(wrapped_text)
+
+
+def print_top_results_and_scores(
+        query: str,
+        embeddings: torch.tensor,
+        pages_and_chunks: list[dict],
+        model: SentenceTransformer,
+        n_resources_to_return: int = 5
+):
+    scores, indices = retrieve_relevant_resources(
+        query=query,
+        embeddings=embeddings,
+        model=model,
+        n_resources_to_return=n_resources_to_return
+    )
+
+    print("Результат: ")
+    for score, index in zip(scores, indices):
+        print(f"Score: {score:.4f}")
+        print_wrapped(pages_and_chunks[index]["sentence_chunk"])
+        print(f"Номер документа: {pages_and_chunks[index]['number']}")
+
+
+def create_dangerous_topic_embeddings(
+        topics: list[str],
+        model: SentenceTransformer
+):
+    return model.encode(topics, convert_to_tensor=True)
+
+
+def is_dangerous_query_with_similarity(
+        query: str, model: SentenceTransformer,
+        dangerous_embeddings,
+        threshold: float = 0.8
+) -> bool:
+    query_embedding = model.encode(query, convert_to_tensor=True)
+
+    similarities = util.cos_sim(query_embedding, dangerous_embeddings)
+
+    max_similarity = similarities.max().item()
+    # print("Max similarity: ", max_similarity)
+    return max_similarity > threshold
