@@ -1,0 +1,14 @@
+
+Flask
+boto3
+botocore
+pypdf
+beautifulsoup4
+python-docx
+pdfplumber
+celery
+psycopg2-binary
+pymongo[bson]
+Werkzeug
+# postgresql
+psycopg2-binary

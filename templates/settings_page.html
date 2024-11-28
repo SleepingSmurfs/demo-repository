@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Настройки бота</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script>
+
+        // Основной обработчик window.onload
+        
+
+        function updatePreview() {
+            const welcomeMessage = document.getElementById("welcome_message").value;
+            const errorMessage = document.getElementById("error_message").value;
+            const userIcon = document.getElementById("user_icon").value;
+            const botIcon = document.getElementById("bot_icon").value;
+            const fontFamily = document.getElementById("font_family").value;
+            const fontSize = document.getElementById("font_size").value;
+            const textColor = document.getElementById("text_color").value;
+            const backgroundColor = document.getElementById("background_color").value;
+            const buttonColor = document.getElementById("button_color").value;
+            const chatBackgroundColor = document.getElementById("chat_background_color").value;
+            const botMessageColor = document.getElementById("bot_message_color").value;
+            const userMessageColor = document.getElementById("user_message_color").value;
+            const botBgMessageColor = document.getElementById("bot_bg_message_color").value;
+            const userBgMessageColor = document.getElementById("user_bg_message_color").value;
+            const botBackgroundImage = document.getElementById("bot_background_image").value;
+            
+            document.querySelector(".chat-container").style.backgroundColor = backgroundColor;
+            const chatContainer = document.querySelector(".chat-container");
+            chatContainer.style.backgroundColor = backgroundColor;
+
+            console.error("1", backgroundColor);
+            // Применение фона чата
+            document.querySelector(".chat-container").style.backgroundImage = botBackgroundImage.trim() !== "" ? `url(${botBackgroundImage})` : "none";
+
+            // Применение данных к превью
+            const previewWelcome = document.getElementById("preview-welcome");
+            const previewError = document.getElementById("preview-error");
+            const previewUserIcon = document.getElementById("preview-user-icon");
+            const previewBotIcon = document.getElementById("preview-bot-icon");
+            const previewChat = document.getElementById("preview-chat");
+
+            if (previewWelcome) previewWelcome.textContent = welcomeMessage;
+            if (previewError) previewError.textContent = errorMessage;
+            if (previewUserIcon) previewUserIcon.src = userIcon;
+            if (previewBotIcon) previewBotIcon.src = botIcon;
+            if (previewChat) {
+                previewChat.style.fontFamily = fontFamily;
+                previewChat.style.fontSize = fontSize;
+                previewChat.style.color = textColor;
+                previewChat.style.backgroundColor = chatBackgroundColor;
+            }
+        }
+
+        function sendMessage() {
+            const userInput = document.getElementById("user_input").value.trim();
+            if (userInput === "") return;
+
+            const chatBox = document.getElementById("preview-chat");
+
+            // Сообщение пользователя
+            const userMessage = document.createElement("div");
+            userMessage.classList.add("user-message");
+            userMessage.userMessageColor = document.getElementById("user_message_color").value;
+            userMessage.style.backgroundColor = document.getElementById("user_bg_message_color").value;
+
+            const userIcon = document.createElement("img");
+            userIcon.classList.add("user-icon");
+            userIcon.src = "/static/images/" + document.getElementById("user_icon").value;
+
+            const userText = document.createElement("p");
+            userText.textContent = userInput;
+
+            userMessage.appendChild(userIcon);
+            userMessage.appendChild(userText);
+            chatBox.appendChild(userMessage);
+
+            // Очистка поля ввода
+            document.getElementById("user_input").value = "";
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Ответ бота
+            setTimeout(() => {
+                const botMessage = document.createElement("div");
+                botMessage.classList.add("bot-message");
+                botMessage.style.color = document.getElementById("bot_message_color").value;
+                botMessage.style.backgroundColor = document.getElementById("bot_bg_message_color").value;
+
+                const botIcon = document.createElement("img");
+                botIcon.classList.add("bot-icon");
+                botIcon.src = "/static/images/" + document.getElementById("bot_icon").value;
+
+                const botText = document.createElement("p");
+                botText.textContent = document.getElementById("error_message").value;
+
+                botMessage.appendChild(botIcon);
+                botMessage.appendChild(botText);
+                chatBox.appendChild(botMessage);
+
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 500);
+        }
+
+        function setupEventListeners() {
+            const userInput = document.getElementById("user_input");
+            const sendButton = document.getElementById("send_button");
+
+            userInput.addEventListener("keypress", function(event) {
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            sendButton.addEventListener("click", sendMessage);
+        }
+        window.onload = function() {
+            setupEventListeners();
+            updatePreview();
+            const modelSelect = document.getElementById('model');
+            modelSelect.addEventListener('change', loadConfigFile); 
+        };
+        async function loadConfigFile() {
+            const modelName = document.getElementById('model').value;
+
+            try {
+                // Отправляем запрос на сервер для получения конфигурации
+                const response = await fetch(`/load_settigs/${modelName}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Не удалось загрузить конфигурацию');
+                }
+
+                // Получаем конфиг в виде JSON
+                const config = await response.json();
+
+                // Обновляем UI с полученными настройками
+                updateUIWithConfig(config);
+
+            } catch (error) {
+                console.error('Ошибка при загрузке конфига:', error);
+            }
+        }
+
+        function updateUIWithConfig(config) {
+            // Пример обновления UI (элементов формы)
+            document.getElementById('welcome_message').value = config.welcome_message || '';
+            document.getElementById('error_message').value = config.error_message || '';
+            document.getElementById('user_icon').value = config.user_icon || '';
+            document.getElementById('bot_icon').value = config.bot_icon || '';
+            document.getElementById('font_family').value = config.font_family || '';
+            document.getElementById('font_size').value = config.font_size || '';
+            document.getElementById('text_color').value = config.text_color || '#000000';
+            document.getElementById('chat_background_color').value = config.chat_background_color || '#ffffff';
+            document.getElementById('background_color').value = config.background_color || '#ffffff';
+            document.getElementById('bot_message_color').value = config.bot_message_color || '#000000';
+            document.getElementById('user_message_color').value = config.user_message_color || '#000000';
+            document.getElementById('bot_bg_message_color').value = config.bot_bg_message_color || '#ffffff';
+            document.getElementById('user_bg_message_color').value = config.user_bg_message_color || '#ffffff';
+            document.getElementById('button_color').value = config.button_color || '#000000';
+            document.getElementById('bot_background_image').value = config.bot_background_image || '#000000';
+            document.querySelector(".chat-container").style.backgroundColor = config.background_color || '#ffffff';
+
+            console.error(config);
+            const welcomeMessage = document.getElementById("welcome_message").value;
+            const errorMessage = document.getElementById("error_message").value;
+            const userIcon = document.getElementById("user_icon").value;
+            const botIcon = document.getElementById("bot_icon").value;
+            const fontFamily = document.getElementById("font_family").value;
+            const fontSize = document.getElementById("font_size").value;
+            const textColor = document.getElementById("text_color").value;
+            const backgroundColor = document.getElementById("background_color").value;
+            const buttonColor = document.getElementById("button_color").value;
+            const chatBackgroundColor = document.getElementById("chat_background_color").value;
+            const botMessageColor = document.getElementById("bot_message_color").value;
+            const userMessageColor = document.getElementById("user_message_color").value;
+            const botBgMessageColor = document.getElementById("bot_bg_message_color").value;
+            const userBgMessageColor = document.getElementById("user_bg_message_color").value;
+            const botBackgroundImage = document.getElementById("bot_background_image").value;
+            console.error("1", backgroundColor);
+            // Применение фона чата
+            document.querySelector(".chat-container").style.backgroundImage = botBackgroundImage.trim() !== "" ? `url(${botBackgroundImage})` : "none";
+
+            // Применение данных к превью
+            const previewWelcome = document.getElementById("preview-welcome");
+            const previewError = document.getElementById("preview-error");
+            const previewUserIcon = document.getElementById("preview-user-icon");
+            const previewBotIcon = document.getElementById("preview-bot-icon");
+            const previewChat = document.getElementById("preview-chat");
+
+            if (previewWelcome) previewWelcome.textContent = welcomeMessage;
+            if (previewError) previewError.textContent = errorMessage;
+            if (previewUserIcon) previewUserIcon.src = userIcon;
+            if (previewBotIcon) previewBotIcon.src = botIcon;
+            if (previewChat) {
+                previewChat.style.fontFamily = fontFamily;
+                previewChat.style.fontSize = fontSize;
+                previewChat.style.color = textColor;
+                previewChat.style.backgroundColor = chatBackgroundColor;
+            }
+        }
+        async function createNewModel() {
+            const newModelName = document.getElementById("new_model_name").value.trim();
+            if (!newModelName) {
+                alert("Введите название модели.");
+                return;
+            }
+
+            try {
+                const response = await fetch('/create_model', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ model_name: newModelName })
+                });
+
+                if (response.ok) {
+                    alert("Модель успешно создана!");
+                    // Перезагрузка списка моделей
+                    window.location.reload();
+                } else {
+                    throw new Error('Ошибка при создании модели.');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert("Не удалось создать модель.");
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="settings-container">
+        <div class="settings-left">
+            <h1>Настройки бота</h1>
+            <form method="POST" oninput="updatePreview()">
+                <label for="model">Выберите модель бота:</label>
+                <select id="model" name="model">
+                    {% for model in list_of_models %}
+                        <option value="{{ model }}" {% if model == model_name %}selected{% endif %}>{{ model }}</option>
+                    {% endfor %}
+                </select>
+                <label for="new_model_name">Создать новую модель:</label>
+                <input type="text" id="new_model_name" placeholder="Название новой модели">
+                <button type="button" onclick="createNewModel()">Создать</button>
+                <label for="welcome_message">Приветственное сообщение:</label>
+                <textarea id="welcome_message" name="welcome_message" rows="3">{{ settings['welcome_message'] }}</textarea>
+
+                <label for="error_message">Сообщение об ошибке:</label>
+                <textarea id="error_message" name="error_message" rows="3">{{ settings['error_message'] }}</textarea>
+
+                <label for="user_icon">Иконка пользователя (ссылка):</label>
+                <input type="text" id="user_icon" name="user_icon" value="{{ settings['user_icon'] }}">
+
+                <label for="bot_icon">Иконка бота (ссылка):</label>
+                <input type="text" id="bot_icon" name="bot_icon" value="{{ settings['bot_icon'] }}">
+
+                <label for="font_family">Шрифт:</label>
+                <input type="text" id="font_family" name="font_family" value="{{ settings['font_family'] }}">
+
+                <label for="font_size">Размер шрифта:</label>
+                <input type="text" id="font_size" name="font_size" value="{{ settings['font_size'] }}">
+
+                <label for="bot_background_image">Фон чата (URL изображения):</label>
+                <input type="text" id="bot_background_image" name="bot_background_image" value="{{ settings['bot_background_image'] }}">
+
+                <label for="text_color">Цвет текста:</label>
+                <input type="color" id="text_color" name="text_color" value="{{ settings['text_color'] }}">
+
+                <label for="chat_background_color">Цвет фона контейнера чата:</label>
+                <input type="color" id="chat_background_color" name="chat_background_color" value="{{ settings['chat_background_color'] }}">
+
+                <label for="bot_message_color">Цвет сообщений бота:</label>
+                <input type="color" id="bot_message_color" name="bot_message_color" value="{{ settings['bot_message_color'] }}">
+
+                <label for="user_message_color">Цвет сообщений пользователя:</label>
+                <input type="color" id="user_message_color" name="user_message_color" value="{{ settings['user_message_color'] }}">
+
+                <label for="background_color">Цвет фона:</label>
+                <input type="color" id="background_color" name="background_color" value="{{ settings['background_color'] }}">
+
+                <label for="bot_bg_message_color">Цвет фона сообщений бота:</label>
+                <input type="color" id="bot_bg_message_color" name="bot_bg_message_color" value="{{ settings['bot_bg_message_color'] }}">
+
+                <label for="user_bg_message_color">Цвет фона сообщений пользователя:</label>
+                <input type="color" id="user_bg_message_color" name="user_bg_message_color" value="{{ settings['user_bg_message_color'] }}">
+
+                <label for="button_color">Цвет кнопок:</label>
+                <input type="color" id="button_color" name="button_color" value="{{ settings['button_color'] }}">
+
+                <button type="submit">сохранить настройки</button>
+            </form>
+            <a href="{{ url_for('upload') }}">
+                <button>Перейти на страницу загрузки файлов</button>
+            </a>
+        </div>
+        
+        <div class="settings-right">
+            <div class="chat-container" style="background-color: {{ settings['background_color'] }};">
+                <div id="preview-chat" class="chat-box" style="font-family: {{ settings['font_family'] }}; font-size: {{ settings['font_size'] }};">
+                    <div class="bot-message" id="bot-message" style="color: {{ settings['bot_message_color'] }};background-color: {{ settings['bot_bg_message_color'] }}">
+                        <img id="bot-icon" src="{{ url_for('static', filename='images/' + settings['bot_icon']) }}" alt="Bot Icon" class="bot-icon">
+                        <p id="preview-welcome">{{ settings['welcome_message'] }}</p>
+                    </div>
+                    
+                </div>
+                <div class="input-box">
+                    <input id="user_input" type="text" placeholder="Введите сообщение..." />
+                    <button id="send_button" class="send-button" style="background-color: {{ settings['button_color'] }}">Отправить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

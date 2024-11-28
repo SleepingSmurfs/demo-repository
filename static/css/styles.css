@@ -1,0 +1,172 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #ffffff;
+}
+
+.settings-container {
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+}
+
+.settings-left{
+    width: 30%;
+    padding: 20px;
+    border-radius: 8px;
+    background-color: #265d8e;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+.settings-right {
+    width: 60%;
+    padding: 20px;
+    border-radius: 8px;
+    background-color: #265d8e;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+h1, h2 {
+    text-align: center;
+}
+
+label {
+    font-weight: bold;
+    display: block;
+    margin-top: 10px;
+}
+
+textarea, input[type="text"], input[type="color"] {
+    width: 92%;
+    padding: 10px;
+    margin-top: 5px;
+    background-color: #a3c0f3;
+    border-radius: 10px;
+}
+
+button {
+    padding: 10px 20px;
+    margin-top: 10px;
+    border: none;
+    cursor: pointer;
+}
+
+.chat-preview {
+    max-width: 90%;
+    max-height: 300px;
+    margin: 10px auto; /* Центрируем контейнер чата */
+}
+
+.chat-container {
+    max-width: 90%;  /* Ограничиваем ширину контейнера чата */
+    margin: 0 auto;    /* Центрируем контейнер */
+    display: flex;
+    flex-direction: column;
+    height: 600px;      /* Ограничиваем общую высоту контейнера */
+    position: relative; /* Для правильного позиционирования фиксированного поля ввода */
+}
+
+.chat-box {
+    background-color: white;
+    max-width: 100%;
+    padding: 1px;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    flex-grow: 1;       /* Даем место для роста, оставляя пространство для ввода */
+    overflow-y: auto;   /* Включаем вертикальную прокрутку */
+    margin-bottom: 20px;
+    margin: 10px;  
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    max-height: 83%; /* Ограничиваем высоту чата, чтобы оставить место для поля ввода */
+}
+
+.user-message, .bot-message {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 10px;
+    max-width: 70%;
+    overflow-wrap: break-word; /* Перенос текста, если превышена ширина */
+    word-wrap: break-word; /* Для более широкой поддержки браузерами */
+    word-break: break-word; 
+}
+
+.user-message {
+    margin-left: auto;
+    flex-direction: row-reverse;
+}
+
+.bot-message {
+    flex-direction: row;
+}
+
+
+.bot-icon, .user-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+.user-message p, .bot-message p {
+    margin: 0;
+    padding: 0 10px;
+    word-wrap: break-word; /* Перенос текста на новую строку, если не помещается */
+    white-space: normal;
+    overflow-wrap: break-word; /* Перенос текста, если превышена ширина */
+    word-wrap: break-word; /* Для более широкой поддержки браузерами */
+    word-break: break-word; 
+}
+
+.input-box {
+    position: sticky;
+    max-width: 100%;
+    margin: 10px;
+    bottom: 0;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    z-index: 10; /* Чтобы поле ввода было поверх чата */
+    border-top: 1px solid #ccc;
+}
+
+#user_input {
+    width: 80%;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin: 4px;
+}
+
+#send_button {
+    width: 20%;
+    background-color: #4CAF50;
+    color: white;
+    font-size: 16px;
+    border-radius: 5px;
+    margin: 4px;
+}
+/* Стили для круглой кнопки "Войти" */
+.login-circle {
+    width: 80px;
+    height: 80px;
+    background-color: {{ settings['button_color'] }};
+    color: {{ settings['text_color'] }};
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    cursor: pointer;
+    font-family: {{ settings['font_family'] }};
+    font-size: 18px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+}
+
+.login-circle:hover {
+    transform: scale(1.1);
+}

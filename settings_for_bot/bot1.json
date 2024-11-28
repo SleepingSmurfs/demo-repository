@@ -1,0 +1,17 @@
+{
+    "welcome_message": "hi",
+    "error_message": "no",
+    "user_icon": "user_icon.png",
+    "bot_icon": "bot_icon.png",
+    "font_family": "Arial",
+    "font_size": "121",
+    "text_color": "#37a22f",
+    "background_color": "#bd550f",
+    "button_color": "#22c385",
+    "chat_background_color": "#1127b0",
+    "bot_message_color": "#dc0404",
+    "user_message_color": "#cc5200",
+    "bot_bg_message_color": "#15991e",
+    "user_bg_message_color": "#5219d7",
+    "bot_background_image": ""
+}
